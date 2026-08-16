@@ -229,7 +229,7 @@ export function analyseDecision(decision: PropertyDecision): {
   const feasibleLoan = Math.min(maxLoanByTdsr, ltvLoan);
   const monthlyMortgage = mortgagePayment(feasibleLoan, monthlyRate, months);
 
-  const buyerStampDuty = target.buyerStampDuty || calculateSingaporeBsd(target.targetPrice);
+  const buyerStampDuty = calculateSingaporeBsd(target.targetPrice);
   const minimumCashDownpayment = target.targetPrice * 0.05;
   const cpfOrCashDownpayment = target.targetPrice * 0.2;
   const totalAcquisitionCost =
@@ -341,13 +341,14 @@ export function analyseDecision(decision: PropertyDecision): {
   };
 
   const timeline = buildTimeline(analysis, household.targetMonths);
-  const checklist = [
+  const defaultChecklist = [
     { label: "Confirm HDB valuation range with latest comparable transactions", done: true },
     { label: "Request bank IPA and stress-test at +1% and +2%", done: false },
     { label: "Confirm CPF refund and accrued interest from CPF portal", done: false },
     { label: "Decide sell-first vs buy-first sequence before shortlisting", done: false },
     { label: "Prepare seller documents, photos, and viewing calendar", done: false },
   ];
+  const checklist = mergeChecklist(defaultChecklist, decision.checklist ?? []);
   const report = buildReport(decision, analysis);
 
   return { analysis, timeline, checklist, report };
@@ -406,8 +407,10 @@ function buildTimeline(analysis: Analysis, targetMonths: number): TimelineItem[]
 }
 
 function buildReport(decision: PropertyDecision, analysis: Analysis): DecisionReport {
+  const best = [...analysis.scenarios].sort((a, b) => b.score - a.score)[0];
+
   return {
-    headline: `${decision.client_name}: ${analysis.recommendationClass} ${analysis.scenarios[0].name.toLowerCase()} plan`,
+    headline: `${decision.client_name}: ${best.className} ${best.name.toLowerCase()} plan`,
     summary: analysis.recommendation,
     nextActions: [
       "Validate the valuation range against the latest HDB resale comparables.",
@@ -424,6 +427,10 @@ function buildReport(decision: PropertyDecision, analysis: Analysis): DecisionRe
       "Market comparables are demo analytical placeholders until licensed transaction feeds are connected.",
     ],
   };
+}
+
+function mergeChecklist(defaults: ChecklistItem[], saved: ChecklistItem[]) {
+  return defaults.map((item) => saved.find((savedItem) => savedItem.label === item.label) ?? item);
 }
 
 export function currency(value: number) {

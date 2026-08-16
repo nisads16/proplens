@@ -27,6 +27,7 @@ export default function Home() {
   const computed = useMemo(() => analyseDecision(draft), [draft]);
   const activeDecision = { ...draft, ...computed, status: "ready" as const };
   const analysis = computed.analysis;
+  const bestScenario = [...analysis.scenarios].sort((a, b) => b.score - a.score)[0];
 
   useEffect(() => {
     void loadDecisions();
@@ -215,7 +216,7 @@ export default function Home() {
 
             <div className="panel">
               <h2 className="section-title">Recommended Direction</h2>
-              <p className="mt-3 text-2xl font-semibold">{analysis.recommendationClass}: {analysis.scenarios[0].name}</p>
+              <p className="mt-3 text-2xl font-semibold">{bestScenario.className}: {bestScenario.name}</p>
               <p className="mt-3 text-sm leading-6 text-[#56615d]">{analysis.recommendation}</p>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <Metric label="Value range" value={`${currency(analysis.valuationLow)} - ${currency(analysis.valuationHigh)}`} />
