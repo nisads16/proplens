@@ -10,6 +10,7 @@ export type Household = {
 };
 
 export type CurrentProperty = {
+  address: string;
   propertyType: string;
   town: string;
   floorAreaSqm: number;
@@ -98,12 +99,15 @@ export type Analysis = {
 
 export type Comparable = {
   project: string;
+  address: string;
   town: string;
   type: string;
   sizeSqm: number;
   price: number;
   psf: number;
   date: string;
+  distanceKm: number;
+  priceDifference: number;
   similarity: number;
 };
 
@@ -141,6 +145,7 @@ const DEFAULT_HOUSEHOLD: Household = {
 };
 
 const DEFAULT_PROPERTY: CurrentProperty = {
+  address: "Tampines Street 81, Singapore",
   propertyType: "HDB 4-room",
   town: "Tampines",
   floorAreaSqm: 93,
@@ -387,11 +392,48 @@ function clamp(value: number) {
 
 function buildComparables(property: CurrentProperty): Comparable[] {
   const base = property.estimatedValue / Math.max(1, property.floorAreaSqm) / 10.7639;
+  const vicinity = inferVicinity(property);
+
   return [
-    { project: "Tampines St 81", town: property.town, type: property.propertyType, sizeSqm: 93, price: property.estimatedValue * 0.98, psf: base * 0.98, date: "Q2 2026", similarity: 94 },
-    { project: "Tampines Ave 4", town: property.town, type: property.propertyType, sizeSqm: 91, price: property.estimatedValue * 1.03, psf: base * 1.05, date: "Q2 2026", similarity: 89 },
-    { project: "Tampines Central", town: property.town, type: property.propertyType, sizeSqm: 96, price: property.estimatedValue * 0.95, psf: base * 0.92, date: "Q1 2026", similarity: 84 },
+    toComparable(`${vicinity.street} nearby stack`, `${vicinity.street}, within 300m`, property, 93, property.estimatedValue * 0.98, base * 0.98, "Q2 2026", 0.3, 94),
+    toComparable(`${vicinity.town} same flat type`, `${vicinity.town} town, within 700m`, property, 91, property.estimatedValue * 1.03, base * 1.05, "Q2 2026", 0.7, 89),
+    toComparable(`${vicinity.town} recent resale`, `${vicinity.town} planning area, within 1.2km`, property, 96, property.estimatedValue * 0.95, base * 0.92, "Q1 2026", 1.2, 84),
   ];
+}
+
+function toComparable(
+  project: string,
+  address: string,
+  property: CurrentProperty,
+  sizeSqm: number,
+  price: number,
+  psf: number,
+  date: string,
+  distanceKm: number,
+  similarity: number,
+): Comparable {
+  return {
+    project,
+    address,
+    town: property.town,
+    type: property.propertyType,
+    sizeSqm,
+    price,
+    psf,
+    date,
+    distanceKm,
+    priceDifference: price - property.estimatedValue,
+    similarity,
+  };
+}
+
+function inferVicinity(property: CurrentProperty) {
+  const address = property.address.trim();
+  const street = address ? address.split(",")[0] : `${property.town} vicinity`;
+  return {
+    street,
+    town: property.town || "Selected town",
+  };
 }
 
 function buildTimeline(analysis: Analysis, targetMonths: number): TimelineItem[] {

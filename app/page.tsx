@@ -201,6 +201,8 @@ export default function Home() {
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <Field label="Client name" value={draft.client_name} onChange={(value) => updateRoot("client_name", value)} />
                 <Field label="Objective" value={draft.objective} onChange={(value) => updateRoot("objective", value)} />
+                <Field label="Address of Current Property (if applicable)" value={draft.current_property.address} onChange={(value) => updateGroup<CurrentProperty>("current_property", "address", value)} />
+                <Field label="Current property town" value={draft.current_property.town} onChange={(value) => updateGroup<CurrentProperty>("current_property", "town", value)} />
                 <Field label="Monthly household income" value={draft.household.monthlyIncome} money onChange={(value) => updateGroup<Household>("household", "monthlyIncome", value)} />
                 <Field label="Cash savings" value={draft.household.cashSavings} money onChange={(value) => updateGroup<Household>("household", "cashSavings", value)} />
                 <Field label="CPF OA available" value={draft.household.cpfOa} money onChange={(value) => updateGroup<Household>("household", "cpfOa", value)} />
@@ -314,15 +316,21 @@ export default function Home() {
 
           <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
             <div className="panel">
-              <h2 className="section-title">Comparable Transactions</h2>
+              <h2 className="section-title">Vicinity Price Comparison</h2>
+              <p className="muted">
+                Similar {draft.current_property.propertyType} units around {draft.current_property.address || draft.current_property.town}.
+              </p>
               <div className="mt-4 overflow-x-auto">
                 <table>
                   <thead>
                     <tr>
                       <th>Comparable</th>
+                      <th>Vicinity</th>
                       <th>Date</th>
                       <th>Size</th>
                       <th>Price</th>
+                      <th>Difference</th>
+                      <th>Distance</th>
                       <th>Similarity</th>
                     </tr>
                   </thead>
@@ -330,9 +338,15 @@ export default function Home() {
                     {analysis.comparables.map((item) => (
                       <tr key={`${item.project}-${item.date}`}>
                         <td>{item.project}</td>
+                        <td>{item.address}</td>
                         <td>{item.date}</td>
                         <td>{item.sizeSqm} sqm</td>
                         <td>{currency(item.price)}</td>
+                        <td className={item.priceDifference >= 0 ? "price-up" : "price-down"}>
+                          {item.priceDifference >= 0 ? "+" : ""}
+                          {currency(item.priceDifference)}
+                        </td>
+                        <td>{item.distanceKm.toFixed(1)} km</td>
                         <td>{item.similarity}/100</td>
                       </tr>
                     ))}
